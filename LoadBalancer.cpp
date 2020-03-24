@@ -2,7 +2,11 @@
 
 using namespace std;
 
-vector <string> files_in_dir(string dir_name) {
+bool compare(string a, string b) {
+    return a < b;
+}
+
+vector <string> LoadBalancer::files_in_dir(string dir_name) {
     vector <string> files;
     DIR *dir;
     struct dirent *ent;
@@ -19,7 +23,17 @@ vector <string> files_in_dir(string dir_name) {
     }
 }
 
-void child_job(int p[]){
+void LoadBalancer::parent_job(string filename, pid_t pid, int p[]) {
+    vector <int> pv;
+    pv.push_back(p[READ_INDEX]);
+    pv.push_back(p[WRITE_INDEX]);
+    pipes.push_back(pv);
+    childs.push_back(pid);
+    write(p[WRITE_INDEX], filename.c_str(), filename.length());
+    cout << "parent" << "-" << filename << "-" << p[WRITE_INDEX] << "-" << p[READ_INDEX] << endl;
+}
+
+void LoadBalancer::child_job(int p[]){
     char read_[5], write_[5];
     strcpy(read_, to_string(p[READ_INDEX]).c_str());
     strcpy(write_, to_string(p[WRITE_INDEX]).c_str()); 
@@ -27,3 +41,32 @@ void child_job(int p[]){
     char* args[] = {"./worker.out", read_, write_};
     execv(args[0], args);
 }
+
+void LoadBalancer::run() {
+    string command;
+    vector <string> file_names;
+    vector <vector <int>> pipes;
+    vector <pid_t> childes;
+    int p[2];
+    while (getline(cin, command)) {
+        file_names = files_in_dir(command);
+        sort(file_names.begin(), file_names.end(), compare);
+
+        for (int i; i < file_names.size(); i++){
+            string filename = file_names[i];
+            pid_t pid;
+            pipe(p);
+
+            pid = fork();
+            if (pid > 0) {
+                parent_job(filename, pid, p);
+            } else if (pid == 0) {
+                child_job(p);
+            }
+
+        }
+        
+
+    }
+}
+

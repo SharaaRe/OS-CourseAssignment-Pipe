@@ -24,9 +24,10 @@ private:
     std::vector <pid_t> childs;
 
 public:
+    void run();
     std::vector <std::string> files_in_dir(std::string dir_name);
     void parent_job(std::string filename, pid_t pid, int p[]);
-    void child_job()
+    void child_job(int p[]);
 };
 
 #endif
