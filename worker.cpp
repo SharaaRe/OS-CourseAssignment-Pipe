@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
     int p[2];
     char buff[BUFFER_SIZE];
     int nbytes;
-
+    // cout << "worker.cpp executed" << endl;
     if (argc < 3) {
         cerr << "Few arguments for worker process" << endl;
         exit(EXIT_FAILURE);
@@ -24,9 +24,13 @@ int main(int argc, char* argv[]) {
     p[WRITE_INDEX] = stoi(argv[1]); 
     p[READ_INDEX] = stoi(argv[2]); 
 
+
     if ((nbytes = read(p[READ_INDEX], buff, BUFFER_SIZE)) > 0) {
-        cout << "worker process" << buff << endl;
+        // cout << "worker process" << buff << endl;
+        ;
     } else if (nbytes != 0) {
+        // cout << "reading finished" << endl;
+        ;
         exit(EXIT_FAILURE);
     }
 

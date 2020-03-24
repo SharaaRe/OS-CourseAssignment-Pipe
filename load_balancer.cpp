@@ -39,6 +39,10 @@ bool compare(string a, string b) {
     return a < b;
 }
 
+void parent_job() {
+    
+}
+
 int main() {
     string command;
     vector <string> file_names;
@@ -50,10 +54,13 @@ int main() {
         // open_dir
         file_names = files_in_dir(command);
         sort(file_names.begin(), file_names.end(), compare);
-        for (string filename : file_names){
+
+        for (int i; i < file_names.size(); i++){
+            string filename = file_names[i];
             pid_t pid;
-            // cout << filename << endl;
             pipe(p);
+
+            // cout << i << "-" <<  pid <<  filename << endl;
             
             pid = fork();
             if (pid > 0) {
@@ -64,17 +71,17 @@ int main() {
                 pipes.push_back(pv);
                 childes.push_back(pid);
                 write(p[WRITE_INDEX], filename.c_str(), filename.length());
-                cout << "parent fork" << endl;
+                cout << "parent" << "-" << filename << "-" << p[WRITE_INDEX] << "-" << p[READ_INDEX] << endl;
 
             } else if (pid == 0) {
                 // child process
                 char read_[5], write_[5];
                 strcpy(read_, to_string(p[READ_INDEX]).c_str());
                 strcpy(write_, to_string(p[WRITE_INDEX]).c_str()); 
-                cout << "child fork" << endl;
-                char* args[] = {"./worker.out", read_, write_};
-                execv(args[0], args);
-
+                // cout << "child fork" << "-" <<  filename << endl;
+                // char* args[] = {"./worker.out", read_, write_};
+                execlp("./worker.out", "worker.out", read_, write_));
+                exit(EXIT_SUCCESS);
             }
 
         }
