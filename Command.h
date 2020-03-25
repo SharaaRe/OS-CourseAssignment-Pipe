@@ -5,16 +5,19 @@
 #include <utility>
 #include <vector>
 
+#define QUIT "quit"
+
 typedef std::pair <std::string, std::string> query;
 
 
-struct  Filter
+typedef struct  filter
 {
-    int fd;
+    std::string pipe_name;
     std::vector <query> field_names;
     std::vector <query> field_to_sort;
-};
+}Filter;
 
+void print_filter(Filter fil);
 
 class Command {
 private:
@@ -24,8 +27,9 @@ private:
     void parse(std::string command);
 public:
     Command(std::string command_input);
-    Filter* get_filter(std::string filename);
+    Filter get_filter();
     std::string get_dir();
+    int get_n();
     void print();
 };
 

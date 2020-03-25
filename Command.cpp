@@ -13,6 +13,7 @@
 #define DIR "dir"
 #define ASC "ascending"
 #define DESC "descending"
+#define PRC "processes"
 
 using namespace std;
 
@@ -24,7 +25,7 @@ Command::Command(string command) {
     while (getline(ss, token, '-'))
     {
         token.erase(remove_if(token.begin(), token.end(), ::isspace), token.end());
-        cout << token << endl;
+        // cout << token << endl;
         stringstream ts(token);
         getline(ts, q.first, '=');
         getline(ts, q.second);
@@ -32,6 +33,8 @@ Command::Command(string command) {
             this->dir = q.second;
         else if (q.second == ASC or q.second == DESC)
             this->filter.field_to_sort.push_back(q);
+        else if (q.first == PRC)
+            this->n_processes = stoi(q.second);
         else
             this->filter.field_names.push_back(q);
     }
@@ -41,26 +44,25 @@ string Command::get_dir() {
     return dir;
 }
 
-Filter* Command::get_filter(string filename) {
-    int fd;
-    string address = "./" + dir + filename;
-    if ((fd = open(address.c_str(), O_RDWR)) > 0) {
-        Filter* fil = new Filter;
-        *fil = this->filter;
-        fil->fd = fd;
-        return fil;
-    } else 
-        return NULL;
+int Command::get_n() {
+    return n_processes;
+}
+Filter Command::get_filter() {
+    return filter;
+}
+
+void print_filter(Filter fil) {
+    cout << "Fields" << endl;
+    for (int i = 0; i < fil.field_names.size(); i++) 
+        cout << "first " << fil.field_names[i].first << "- second " << fil.field_names[i].second << endl;
+
+    cout << "Sorts" << endl;
+    for (int i = 0; i < fil.field_to_sort.size(); i++) 
+        cout << "first " << fil.field_to_sort[i].first << "- second " << fil.field_to_sort[i].second << endl;
 }
 
 void Command::print() {
     cout << "directory " << dir << endl; 
-    cout << "Fields" << endl;
-    for (int i = 0; i < filter.field_names.size(); i++) 
-        cout << "first " << filter.field_names[i].first << "- second " << filter.field_names[i].second << endl;
-
-    cout << "Sorts" << endl;
-    for (int i = 0; i < filter.field_to_sort.size(); i++) 
-        cout << "first " << filter.field_to_sort[i].first << "- second " << filter.field_to_sort[i].second << endl;
-        
+    print_filter(filter);
+ 
 }
