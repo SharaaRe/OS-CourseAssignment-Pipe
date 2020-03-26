@@ -57,7 +57,8 @@ void LoadBalancer::handle_command(Command cmd) {
     int p[2];
     pid_t pid;
     vector <string> file_names = files_in_dir(cmd.get_dir());
-    remove_if(file_names.begin(), file_names.end(), junk);
+    auto end = remove_if(file_names.begin(), file_names.end(), junk);
+    file_names.erase(end, file_names.end());
     // Filter fil = cmd.get_filter();
     sort(file_names.begin(), file_names.end(), compare);
     char buff[BUFF_SIZE] = {0};
