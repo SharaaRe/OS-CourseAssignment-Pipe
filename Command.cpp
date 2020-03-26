@@ -17,7 +17,19 @@
 
 using namespace std;
 
+vector <string> split(string s, char delim) {
+    vector <string> splited;
+    string token;
+    stringstream ss(s);
+    while (getline(ss, token, delim)){
+        token.erase(remove_if(token.begin(), token.end(), ::isspace), token.end());
+        splited.push_back(token);
+    }
+    return splited;
+}
+
 Command::Command(string command) {
+    this->serialized = command;
     stringstream ss(command);
     string token;
     vector <query> qs;
@@ -38,6 +50,10 @@ Command::Command(string command) {
         else
             this->filter.field_names.push_back(q);
     }
+}
+
+string Command::get_serialized() {
+    return serialized;
 }
 
 string Command::get_dir() {

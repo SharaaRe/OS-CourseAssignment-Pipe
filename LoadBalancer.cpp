@@ -26,7 +26,7 @@ vector <string> LoadBalancer::files_in_dir(string dir_name) {
     }
 }
 
-void LoadBalancer::parent_job(Filter filter, pid_t pid, int p[]) {
+void LoadBalancer::parent_job(const char* cmd, pid_t pid, int p[]) {
     vector <int> pv;
     pair <pid_t, pipev> child;
     pv.push_back(p[READ_INDEX]);
@@ -34,8 +34,10 @@ void LoadBalancer::parent_job(Filter filter, pid_t pid, int p[]) {
     child.first = pid;
     child.second = pv;
     childs.push_back(child);
+    // cout << "buffer in parent job" << cmd << endl;
+
     // cout << "eh" << endl;
-    write(p[WRITE_INDEX], &filter, sizeof(Filter));
+    write(pv[WRITE_INDEX], cmd, BUFF_SIZE);
     // cout << "parent" << "-" << filter.fd << "-" << p[WRITE_INDEX] << "-" << p[READ_INDEX] << endl;
 }
 
@@ -48,44 +50,58 @@ void LoadBalancer::child_job(int p[]){
     execlp(address.c_str(), WORKER, read_, write_, NULL);
 }
 
+bool junk(string s) {return s[0] == '.';}
+
 void LoadBalancer::handle_command(Command cmd) {
     int n_proccess = cmd.get_n();
     int p[2];
     pid_t pid;
     vector <string> file_names = files_in_dir(cmd.get_dir());
-    Filter fil = cmd.get_filter();
+    remove_if(file_names.begin(), file_names.end(), junk);
+    // Filter fil = cmd.get_filter();
     sort(file_names.begin(), file_names.end(), compare);
-
+    char buff[BUFF_SIZE] = {0};
+    strcpy(buff, cmd.get_serialized().c_str());
     for (int i = 0; i < n_proccess; i++) {
         pipe(p);
         pid = fork();
         if (pid > 0) {
-            parent_job(fil, pid, p);
+            parent_job(buff, pid, p);
         } else if (pid == 0) {
             child_job(p);
         }
     }
-
     for (int i = 0; i < file_names.size(); i++) {
+        // cout << "first job done" << endl;
+        memset(buff, 0, BUFF_SIZE);
+        strcpy(buff, file_names[i].c_str());
+        // cout << i % n_proccess;
         pair <pid_t, pipev> child = childs[i % n_proccess];
-        write(child.second[WRITE_INDEX], file_names[i].c_str(), file_names[i].length()+1);
+        write(child.second[WRITE_INDEX], buff, BUFF_SIZE);
     }
 
     for (int i = 0; i < childs.size(); i++) {
+        int stat;
+        // cout << "quiting job" << endl;
+        memset(buff, 0, BUFF_SIZE);
+        strcpy(buff, QUIT);
         pair <pid_t, pipev> child = childs[i];
         write(child.second[WRITE_INDEX], QUIT, strlen(QUIT) + 1);
-        waitpid(child.first, NULL, 0);
+        waitpid(child.first, &stat, 0);
+        if (stat == EXIT_SUCCESS)
+            cout << "worker exited successfully" << endl;
+        else
+            cout << "worker failed" << endl;
     }
 
 }
 
 void LoadBalancer::run() {
     string command;
-    int n_proccess;
-
     while (getline(cin, command)) {
         Command cmd(command);
         handle_command(cmd);
+        cout << "end handle" << endl;
     }
 }
 
