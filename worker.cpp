@@ -1,6 +1,7 @@
 #include <dirent.h>
 #include <unistd.h> 
 #include <string.h>
+#include <fcntl.h>
 
 #include <iostream>
 #include <fstream>
@@ -10,6 +11,7 @@
 #include <map>
 
 #include "Command.h"
+#include "files.h"
 
 constexpr int READ_INDEX = 0;
 constexpr int WRITE_INDEX = 1;
@@ -18,20 +20,6 @@ constexpr int BUFFER_SIZE = 32;
 
 using namespace std;
 
-vector <vector<string>> parse_file(string filename) {
-    fstream fs;
-    string line;
-    vector <vector <string>> file_data;
-    // vector <map <string, string>> res;[]
-    fs.open(filename);
-    while (getline(fs, line))
-    {
-        // cout << line << endl;
-        file_data.push_back(split(line, '-'));
-    }
-
-    return file_data;
-}
 
 void filter_by (int key, string value, vector <vector<string>> &file_data) {
     for (auto it = file_data.begin(), last = file_data.end(); it != last;   ) 
@@ -48,21 +36,16 @@ vector <vector<string>> filter_file(string filename, Command cmd) {
     Filter fil = cmd.get_filter();
     filename = "./" + cmd.get_dir() + "/" + filename;
     vector <vector <string>> file_data = parse_file(filename);
-    // cout << "filename " << filename << endl; 
     for (int i = 0; i < file_data[0].size(); i++) {
         index.insert(pair <string, int> (file_data[0][i], i));
-        // cout << file_data[0][i] << endl;
     }
-    
 
     for (int i = 0; i < fil.field_names.size(); i++) {
-        // cout << fil.field_names.size() << endl;
+
         if (index.find(fil.field_names[i].first) != index.end()) {
-            // cout << "filter by " << fil.field_names[i].first << " value must be " << fil.field_names[i].second << endl;
             int j = index[fil.field_names[i].first];
             string value = fil.field_names[i].second;
-            // filter_by(j, fil.field_names[i].second, file_data);
-            auto pend = remove_if(file_data.begin(), file_data.end(), [j, value](vector <string>& a){return a[j] != value;});
+            auto pend = remove_if(file_data.begin() + 1, file_data.end(), [j, value](vector <string>& a){return a[j] != value;});
             file_data.erase(pend, file_data.end());
         }
     }
@@ -74,37 +57,43 @@ vector <vector<string>> filter_file(string filename, Command cmd) {
 int main(int argc, char* argv[]) {
     int p[2];
     Command cmd("");
-    char buff[BUFF_SIZE] = {0};
+    string fifo;
+    char buff[PIPE_BUF] = {0};
     int nbytes;
     // cout << "worker.cpp executed" << endl;
-    if (argc < 3) {
+    if (argc < 4) {
         cerr << "Few arguments for worker process" << endl;
         exit(EXIT_FAILURE);
     }
     p[READ_INDEX] = stoi(argv[1]); 
     p[WRITE_INDEX] = stoi(argv[2]); 
+    fifo = string(argv[3]);
 
-    nbytes = read(p[READ_INDEX], buff, BUFF_SIZE);
-    if (nbytes > 0) {
-        // cout << "worker process" << buff << endl;
+    int fd = open(fifo.c_str(), 0666);
+
+    nbytes = read(p[READ_INDEX], buff, PIPE_BUF);
+    if (nbytes > 0 && strlen(buff) > 0) {
         cmd = Command(string(buff));
-        // cmd.print();
+    } else {
+        exit(EXIT_FAILURE);
     }
 
 
 
-    while((nbytes = read(p[READ_INDEX], buff, BUFF_SIZE)) > 0) {
+    while((nbytes = read(p[READ_INDEX], buff, PIPE_BUF)) > 0) {
         if (strcmp(buff, "quit") != 0){
-            cout << buff << endl;
+            // cout << buff << endl;
             vector <vector <string>> file_data = filter_file(string(buff), cmd);
             // cout << "file size" << file_data.size() << endl;
-            for (int i = 0; i < file_data.size(); i++) {
-                for (int j = 0; j < file_data[i].size(); j++)
-                    cout << file_data[i][j] << " / ";
-                cout << endl;
+            if (file_data.size() > 1) {
+
+                // cout << serialize(file_data);
+                memset(buff, 0, PIPE_BUF);
+
+                strcpy(buff, serialize(file_data).c_str());
+                write(fd, buff, PIPE_BUF);
+                memset(buff, 0, PIPE_BUF);
             }
-            
-            memset(buff, 0, BUFF_SIZE);
         } else 
             exit(EXIT_SUCCESS);
     }

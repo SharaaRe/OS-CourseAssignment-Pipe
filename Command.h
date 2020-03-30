@@ -1,14 +1,16 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
+
+
 #include <string>
 #include <utility>
 #include <vector>
+typedef std::pair <std::string, std::string> query;
 
 #define QUIT "quit"
-#define BUFF_SIZE 1024
+// #define BUFFER_SIZE 1024
 
-typedef std::pair <std::string, std::string> query;
 
 
 std::vector <std::string> split(std::string s, char delim);
