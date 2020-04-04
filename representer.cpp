@@ -29,7 +29,8 @@ void sort_by_filters(Command& cmd, vector <vector <string>>& data) {
         int index = distance(data[0].begin(), it);
         ascending = fil.field_to_sort[i].second == "ascending" ? true: false;
         sort(data.begin() + 1, data.end(), [index, ascending](vector <string> a, vector <string> b) 
-                {if (ascending) { return stof(a[index] )< stof(b[index]);}else {return stof(a[index])> stof(b[index]);}});
+                {if (ascending) { return stof(a[index] )< stof(b[index]);}
+                else {return stof(a[index])> stof(b[index]);}});
     }
 }
 

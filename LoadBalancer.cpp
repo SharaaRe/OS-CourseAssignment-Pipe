@@ -8,6 +8,7 @@
 #include <unistd.h> 
 #include <fstream>
 
+#define EXP -1
 #define WORKER "worker.out"
 
 using namespace std;
@@ -29,8 +30,8 @@ vector <string> LoadBalancer::files_in_dir(string dir_name) {
     closedir (dir);
     return files;
     } else {
-        perror ("direction not found!");
-        exit(EXIT_FAILURE);
+        throw EXP;
+
     }
 }
 
@@ -44,7 +45,6 @@ void LoadBalancer::parent_job(const char* cmd, pid_t pid, int p[]) {
     child.second = pv;
     childs.push_back(child);
     write(pv[WRITE_INDEX], cmd, PIPE_BUF);
-    // cout << "parent" << "-" << filter.fd << "-" << p[WRITE_INDEX] << "-" << p[READ_INDEX] << endl;
 }
 
 void LoadBalancer::child_job(int p[], const char* fifo){
@@ -98,7 +98,6 @@ void LoadBalancer::repres_job(Command cmd, string fifo, int fd) {
         write(fd, buff, PIPE_BUF);
 
     } else if (pid == 0) {
-        // cout << "repr child fork" << endl;
         string addr = "./" + REP;
         execlp(addr.c_str(), REP.c_str(), fifo.c_str(), NULL);
     }
@@ -111,7 +110,7 @@ void LoadBalancer::handle_command(Command cmd) {
     char buff[PIPE_BUF] = {0};
     n_process = cmd.get_n();
 
-    string fifo = "./myfifo";
+    string fifo = "./" + cmd.get_dir() + "_fifo";
     fd = open(fifo.c_str(), 0666);
     repres_job(cmd, fifo, fd);
     strcpy(buff, cmd.get_serialized().c_str());
@@ -125,15 +124,20 @@ void LoadBalancer::handle_command(Command cmd) {
             child_job(p, fifo.c_str());
         }
     }
-
-    file_names = files_in_dir(cmd.get_dir());
+    try {
+        file_names = files_in_dir(cmd.get_dir());
+    } catch (int e){
+        cout << "directory not found!" << endl;
+        childs.clear();
+        return;
+    }
     devide_works(file_names, n_process);
     finish_works();
 
     strcpy(buff, QUIT);
     write(fd, buff, PIPE_BUF);
     waitpid(repres, &stat, 0);
-    // cout << "representer exited" <<( (stat == EXIT_SUCCESS) ? "successfully" : "unsuccessfully" )<< endl;
+    childs.clear();
     close(fd);
 
 }
@@ -142,6 +146,8 @@ void LoadBalancer::handle_command(Command cmd) {
 void LoadBalancer::run() {
     string command;
     while (getline(cin, command)) {
+        if (command == QUIT)
+            return;
         Command cmd(command);
         handle_command(cmd);
     }

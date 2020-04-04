@@ -49,9 +49,7 @@ vector <vector<string>> filter_file(string filename, Command cmd) {
             file_data.erase(pend, file_data.end());
         }
     }
-
     return file_data;
-    // for (int i = 0; i < fil.)
 }
 
 int main(int argc, char* argv[]) {
@@ -82,12 +80,9 @@ int main(int argc, char* argv[]) {
 
     while((nbytes = read(p[READ_INDEX], buff, PIPE_BUF)) > 0) {
         if (strcmp(buff, "quit") != 0){
-            // cout << buff << endl;
             vector <vector <string>> file_data = filter_file(string(buff), cmd);
-            // cout << "file size" << file_data.size() << endl;
             if (file_data.size() > 1) {
 
-                // cout << serialize(file_data);
                 memset(buff, 0, PIPE_BUF);
 
                 strcpy(buff, serialize(file_data).c_str());

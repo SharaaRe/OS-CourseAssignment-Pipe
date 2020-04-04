@@ -1,5 +1,5 @@
-CC = g++
-CFLAGS = -c
+CC = g++ -g
+CFLAGS = -c 
 
 all: worker.out load_balancer.out representer.out
 
@@ -15,7 +15,7 @@ representer.out: representer.o Command.o files.o
 
 # OBJ FILES
 
-LoadBalancer.o: LoadBalancer.cpp LoadBalancer.h
+LoadBalancer.o: LoadBalancer.cpp LoadBalancer.h Command.h
 	$(CC) $(CFLAGS) LoadBalancer.cpp
 
 Command.o: Command.cpp Command.h
@@ -35,3 +35,4 @@ clean:
 	rm *.o
 	rm load_balancer.out
 	rm worker.out
+	rm representer.out
